@@ -3,17 +3,17 @@
 
 name:                What-If-CSH
 version:             0.1.0.0
-synopsis:            A suggestion site for CSH Eboard
+synopsis:            A suggestions site for CSH Eboard
 -- description:         
 homepage:            whatif.csh.rit.edu
 license:             MIT
 license-file:        LICENSE
 author:              Harlan Haskins
-maintainer:          harlan@csh.rit.edu
+maintainer:          harlan@harlanhaskins.com
 -- copyright:           
 category:            Web
 build-type:          Simple
-extra-source-files:  README.md
+-- extra-source-files:  
 cabal-version:       >=1.10
 
 executable What-If-CSH
