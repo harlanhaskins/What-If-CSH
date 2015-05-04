@@ -20,6 +20,6 @@ executable What-If-CSH
   main-is:             Server.hs
   -- other-modules:       
   other-extensions:    DataKinds, PolyKinds, TypeFamilies, DeriveGeneric, TypeOperators, OverloadedStrings
-  build-depends:       base, transformers, aeson, postgresql-simple, servant, servant-server, warp, bytestring
+  build-depends:       base, transformers, aeson, postgresql-simple, servant, servant-server, warp, bytestring, wai-cors
   hs-source-dirs:      src
   default-language:    Haskell2010

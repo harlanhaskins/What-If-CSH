@@ -13,8 +13,10 @@ import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.FromRow
 import Database.PostgreSQL.Simple.ToField
 import Database.PostgreSQL.Simple.ToRow
+import Database.PostgreSQL.Simple.Time
 import GHC.Generics
 import Network.Wai.Handler.Warp (run)
+import Network.Wai.Middleware.Cors
 import Servant
 import System.Environment
 import qualified Data.ByteString as B
@@ -48,7 +50,8 @@ suggestionAPI = Proxy
 main = do
     [pw] <- getArgs
     (connectPostgreSQL . fromString . concat) ["host=postgres.csh.rit.edu user=harlan_whatifcsh dbname=harlan_whatifcsh password=", pw]
-        >>= run 5777 
-          . serve suggestionAPI 
+        >>= run 5777
+          . simpleCors
+          . serve suggestionAPI
           . server
 
