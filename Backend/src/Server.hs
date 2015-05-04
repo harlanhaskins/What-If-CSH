@@ -15,11 +15,7 @@ import Database.PostgreSQL.Simple.ToField
 import Database.PostgreSQL.Simple.ToRow
 import GHC.Generics
 import Network.Wai.Handler.Warp (run)
-import Data.Char
-import Data.List
-import Data.String.Utils
 import Servant
-import MakeMarkov
 import System.Environment
 
 data Suggestion = Suggestion
