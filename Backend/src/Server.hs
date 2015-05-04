@@ -13,14 +13,14 @@ import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.FromRow
 import Database.PostgreSQL.Simple.ToField
 import Database.PostgreSQL.Simple.ToRow
+import Database.PostgreSQL.Simple.Time
 import GHC.Generics
 import Network.Wai.Handler.Warp (run)
-import Data.Char
-import Data.List
-import Data.String.Utils
+import Network.Wai.Middleware.Cors
 import Servant
-import MakeMarkov
 import System.Environment
+import qualified Data.ByteString as B
+import Data.String
 
 data Suggestion = Suggestion
   { description :: String
@@ -37,20 +37,21 @@ instance ToRow Suggestion where
   toRow s = [toField (description s)]
 
 type SuggestionAPI = "suggestions" :> ReqBody Suggestion :> Post Suggestion
-               :<|> "suggestions" :> Get [Character]
+                :<|> "suggestions" :> Get [Suggestion]
 
 server :: Connection -> Server SuggestionAPI
-server conn = postCharacter
-         :<|> getCharacters
-         :<|> getQuotes
+server conn = add :<|> get
     where add suggestion = liftIO $ execute conn "insert into suggestions values (?)" suggestion >> return suggestion
           get            = liftIO $ query_ conn "select * from suggestions"
 
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
 
-main = connectPostgreSQL "host=localhost user=whatifcsh dbname=whatifcsh"
-           >>= run 8080
-             . serve suggestionAPI
-             . server
+main = do
+    [pw] <- getArgs
+    (connectPostgreSQL . fromString . concat) ["host=postgres.csh.rit.edu user=harlan_whatifcsh dbname=harlan_whatifcsh password=", pw]
+        >>= run 5777
+          . simpleCors
+          . serve suggestionAPI
+          . server
 
