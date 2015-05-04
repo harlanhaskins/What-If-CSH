@@ -47,11 +47,22 @@ server conn = add :<|> get
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
 
+resourcePolicy = CorsResourcePolicy
+    { corsOrigins = Nothing
+    , corsMethods = simpleMethods
+    , corsRequestHeaders = simpleHeaders
+    , corsExposedHeaders = Nothing
+    , corsMaxAge = Nothing
+    , corsVaryOrigin = False
+    , corsRequireOrigin = False
+    , corsIgnoreFailures = False
+    }
+
 main = do
     [pw] <- getArgs
     (connectPostgreSQL . fromString . concat) ["host=postgres.csh.rit.edu user=harlan_whatifcsh dbname=harlan_whatifcsh password=", pw]
         >>= run 5777
-          . simpleCors
+          . cors (const $ Just resourcePolicy)
           . serve suggestionAPI
           . server
 

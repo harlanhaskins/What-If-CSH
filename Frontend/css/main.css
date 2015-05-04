@@ -1,0 +1,22 @@
+body {
+    background-color: #eee;
+    background-image: url('../img/background.png');
+    background-attachment: fixed;
+}
+
+.container {
+    margin-top: 80px;
+}
+
+.suggestion-input {
+    height: 70px;
+}
+
+.title {
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+#add-button {
+    width: 50px;
+}
