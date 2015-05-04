@@ -24,24 +24,32 @@ import Data.String
 
 data Suggestion = Suggestion
   { description :: String
+  , upvotes :: Integer
+  , downvotes :: Integer
   } deriving Generic
 
 instance FromJSON Suggestion
+    where parseJSON (Object v) = Suggestion 
+                             <$> v .: description
+                             <*> 0 -- upvotes start at 0
+                             <*> 0 -- downvotes start at 0
 instance ToJSON Suggestion
 
 -- PostgreSQL instances
 instance FromRow Suggestion where
-  fromRow = Suggestion <$> field
+  fromRow = Suggestion <$> field <*> field <*> field
 
 instance ToRow Suggestion where
-  toRow s = [toField (description s)]
+  toRow s = [toField (description s),
+             toField (upvotes s),
+             toField (downvotes s)]
 
 type SuggestionAPI = "suggestions" :> ReqBody Suggestion :> Post Suggestion
                 :<|> "suggestions" :> Get [Suggestion]
 
 server :: Connection -> Server SuggestionAPI
 server conn = add :<|> get
-    where add suggestion = liftIO $ execute conn "insert into suggestions values (?)" suggestion >> return suggestion
+    where add suggestion = liftIO $ execute conn "insert into suggestions values (?, ?, ?)" suggestion >> return suggestion
           get            = liftIO $ query_ conn "select * from suggestions"
 
 suggestionAPI :: Proxy SuggestionAPI
