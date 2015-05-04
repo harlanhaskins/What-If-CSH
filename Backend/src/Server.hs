@@ -47,6 +47,8 @@ suggestionAPI = Proxy
 
 main = do
     [pw] <- getArgs
-    conn <- connectPostgreSQL ((fromString . concat) ["host=postgres.csh.rit.edu user=harlan_whatifcsh dbname=harlan_whatifcsh password=", pw])
-    (run 5777 . serve suggestionAPI . server) conn
+    (connectPostgreSQL . fromString . concat) ["host=postgres.csh.rit.edu user=harlan_whatifcsh dbname=harlan_whatifcsh password=", pw]
+        >>= run 5777 
+          . serve suggestionAPI 
+          . server
 
