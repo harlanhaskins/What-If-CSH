@@ -14,6 +14,8 @@ import Database.PostgreSQL.Simple.FromRow
 import Database.PostgreSQL.Simple.ToField
 import Database.PostgreSQL.Simple.ToRow
 import Database.PostgreSQL.Simple.Time
+import Data.Time.Clock
+import Data.Time.Calendar
 import GHC.Generics
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.Cors
@@ -32,6 +34,7 @@ data Suggestion = Suggestion
   , description :: String
   , upvotes :: Integer
   , downvotes :: Integer
+  , timestamp :: UTCTime
   } deriving Generic
 
 instance FromJSON Suggestion
@@ -43,9 +46,11 @@ instance FromJSON Suggestion
                                     <*> return d
                                     <*> return 0 -- upvotes start at 0
                                     <*> return 0 -- downvotes start at 0
+                                    <*> return defaultTime
                             Nothing -> empty
 instance ToJSON Suggestion
 
+defaultTime = (UTCTime (ModifiedJulianDay 0) (secondsToDiffTime 0))
 maxLength = 140
 
 validatedDescription = validated' . strip
@@ -56,7 +61,7 @@ validatedDescription = validated' . strip
 
 -- PostgreSQL instances
 instance FromRow Suggestion where
-  fromRow = Suggestion <$> field <*> field <*> field <*> field
+  fromRow = Suggestion <$> field <*> field <*> field <*> field <*> field
 
 instance ToRow Suggestion where
   toRow s = [toField (description s),
@@ -66,19 +71,23 @@ instance ToRow Suggestion where
 type SuggestionAPI = "suggestions" :> ReqBody Suggestion :> Post Suggestion
                 :<|> "suggestions" :> Get [Suggestion]
                 :<|> "suggestions" :> Capture "id" Integer :> Delete
+                :<|> "suggestions" :> Capture "id" Integer :> "upvote" :> Put ()
+                :<|> "suggestions" :> Capture "id" Integer :> "downvote" :> Put ()
 
 server :: Connection -> Server SuggestionAPI
-server conn = add :<|> get :<|> remove
-    where add suggestion = liftIO $ execute conn "insert into suggestions (description, upvotes, downvotes) values (?, ?, ?)" suggestion >> return suggestion
+server conn = add :<|> get :<|> remove :<|> upvote :<|> downvote
+    where add suggestion = liftIO $ execute conn "insert into suggestions (description, upvotes, downvotes, created_at) values (?, ?, ?, current_timestamp)" suggestion >> return suggestion
           get            = liftIO $ query_ conn "select * from suggestions order by id desc limit 30"
           remove id      = liftIO $ execute conn "delete from suggestions where id = ?" (Only id) >> return ()
+          upvote id      = liftIO $ execute conn "update suggestions set upvotes = upvotes + 1 where id = ?" (Only id) >> return ()
+          downvote id    = liftIO $ execute conn "update suggestions set downvotes = downvotes + 1 where id = ?" (Only id) >> return ()
 
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
 
 resourcePolicy = CorsResourcePolicy
     { corsOrigins = Nothing
-    , corsMethods = simpleMethods
+    , corsMethods = ("DELETE":simpleMethods)
     , corsRequestHeaders = simpleHeaders
     , corsExposedHeaders = Nothing
     , corsMaxAge = Nothing
