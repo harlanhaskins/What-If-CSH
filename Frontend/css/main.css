@@ -54,7 +54,7 @@ body {
    font-size: 24px;
    background: rgba(121, 41, 148, 0.8);
    color: #fff;
-   height: 275px;
+   height: 300px;
    margin: 10px;
    padding: 15px 25px;
    border-radius: 4px;
@@ -72,6 +72,17 @@ body {
     vertical-align: top;
     font-size: 30;
     font-style: italic;
+}
+
+.time {
+    font-size: 12;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+#no-suggestions {
+    color: #888;
+    text-align: center;
+    margin: 100px 0px;
 }
 
 @media (max-width: 991px) {

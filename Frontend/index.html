@@ -10,6 +10,7 @@
     <script src='//code.jquery.com/jquery-2.1.4.min.js'></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/moment.min.js"></script>
 </head>
 <body>
     <div class='container'>
@@ -45,10 +46,16 @@
             <div class='wordwrap col-md-4 col-s-6 col-xs-12' ng-repeat='suggestion in suggestions.slice().reverse()'>
                 <div class='suggestion-content'>
                     <div class='remove'>
-                        <button class='remove-button'><span class='glyphicon glyphicon-remove'><span></button>
+                        <button ng-click='delete(suggestion)' class='remove-button'><span class='glyphicon glyphicon-remove'><span></button>
                     </div>
                     <span class='whatif-title'>What if CSH...</span>{{suggestion.description}}
+                    <div class='time'>
+                        {{timestamp(suggestion)}} ({{suggestion.timestamp}})
+                    </div>
                 </div>
+            </div>
+            <div ng-hide='suggestions.length > 0' class='col-md-12'>
+                <h1 id='no-suggestions'>No suggestions. You should add some!</h1>
             </div>
         </div>
     </div>

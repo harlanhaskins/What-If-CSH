@@ -26,4 +26,19 @@ angular.module('whatIfCSH', [])
              })
              .error(errorCallback);
     };
+    $scope.delete = function(suggestion) {
+        $http.delete(base + "/suggestions/" + suggestion.id)
+             .success(function(data, status, headers, config) {
+               var index = $scope.suggestions.indexOf(suggestion);
+               if (index > -1) {
+                 $scope.suggestions.splice(index, 1);
+               }
+             })
+             .error(errorCallback);
+    }
+    $scope.timestamp = function(suggestion) {
+       var m = moment(suggestion.timestamp, "YYYY-MM-DDTHH:MM:ss.SSSZ")
+       console.log(m);
+       return m.fromNow()
+    }
 });
