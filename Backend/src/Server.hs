@@ -21,6 +21,11 @@ import Servant
 import System.Environment
 import qualified Data.ByteString as B
 import Data.String
+import qualified Data.Text as T
+
+strip  = T.unpack . T.strip . T.pack
+lstrip = T.unpack . T.stripStart . T.pack
+rstrip = T.unpack . T.stripEnd . T.pack
 
 data Suggestion = Suggestion
   { description :: String
@@ -29,11 +34,18 @@ data Suggestion = Suggestion
   } deriving Generic
 
 instance FromJSON Suggestion
-    where parseJSON (Object v) = Suggestion 
-                             <$> v .: "description"
+    where parseJSON (Object v) = do
+                        desc <- (v .: "description")
+                        if (isValidDescription desc)
+                            then Suggestion
+                             <$> (return . strip) desc
                              <*> return 0 -- upvotes start at 0
                              <*> return 0 -- downvotes start at 0
+                        else empty
 instance ToJSON Suggestion
+
+isValidDescription = (/= 0) . length . strip
+    
 
 -- PostgreSQL instances
 instance FromRow Suggestion where
