@@ -7,7 +7,13 @@ angular.module('whatIfCSH', [])
              $scope.suggestions = $scope.suggestions.concat(data);
          });
     $scope.submit = function() {
-        $http.post(base + '/suggestions', {description: $scope.description})
+        if (!$scope.description) return;
+        console.log($scope.description);
+        var trimmed = $scope.description.trim();
+        if (!trimmed) {
+            return;
+        }
+        $http.post(base + '/suggestions', {description: trimmed})
              .success(function(data, status, headers, config) {
                $scope.description = "";
                $scope.suggestions.push(data);
