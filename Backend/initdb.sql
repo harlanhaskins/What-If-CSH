@@ -5,7 +5,7 @@ drop table if exists suggestions;
 create table suggestions (
     description varchar(255) not null,
     upvotes integer not null,
-    downvotes integer not null,
+    downvotes integer not null
 );
 
 alter table suggestions owner to harlan_whatifcsh;
