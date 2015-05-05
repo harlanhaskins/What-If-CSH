@@ -16,28 +16,17 @@
         <nav class="navbar navbar-fixed-top navbar-inverse">
             <div class="container-fluid">
                 <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="#">What if CSH</a>
-                </div>
-                <div id="navbar" class="navbar-collapse collapse">
-                    <ul class="nav navbar-nav">
-                        <li class="active"><a href="#">Home</a></li>
-                    </ul>
+                    <a class="navbar-brand" href="">What if CSH</a>
                 </div>
             </div>
         </nav>
     </div>
     <div id='main' class='container' ng-controller="WhatIfController as whatIf">
         <div class="row suggestion-input">
-            <span class="col-md-3">
+            <div class="col-md-3">
                 <h2 class='title'>What if CSH...</h2>
-            </span>
-            <span class="col-md-9">
+            </div>
+            <div class="col-md-9">
                 <form ng-submit='submit()'>
                     <div class="input-group">
                         <input type="text" class="form-control" placeholder="...provided ways for members to suggest things to eboard." ng-model="description">
@@ -46,11 +35,13 @@
                         </span>
                     </div>
                 </form>
-            </span>
+            </div>
         </div>
         <div class='row'>
-            <div class='wordwrap col-md-4 col-xs-6' ng-repeat='suggestion in suggestions.slice().reverse()'>
-                <p>{{suggestion.description}}</p>
+            <div class='wordwrap col-md-4 col-s-6 col-xs-12' ng-repeat='suggestion in suggestions.slice().reverse()'>
+                <div class='suggestion-content'>
+                    {{suggestion.description}}
+                </div>
             </div>
         </div>
     </div>
