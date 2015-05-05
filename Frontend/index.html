@@ -1,17 +1,17 @@
 <!-- index.html -->
 <html ng-app="whatIfCSH">
-    <head>
-        <title>What if CSH?</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="css/members.min.css">
-        <link rel="stylesheet" href="css/main.css">
-        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
-        <script src='//code.jquery.com/jquery-2.1.4.min.js'></script>
-        <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
-        <script src="js/app.js"></script>
-    </head>
-    <body>
+<head>
+    <title>What if CSH?</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/members.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular.min.js"></script>
+    <script src='//code.jquery.com/jquery-2.1.4.min.js'></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="js/app.js"></script>
+</head>
+<body>
     <div class='container'>
         <nav class="navbar navbar-fixed-top navbar-inverse">
             <div class="container-fluid">
@@ -44,10 +44,13 @@
         <div class='row'>
             <div class='wordwrap col-md-4 col-s-6 col-xs-12' ng-repeat='suggestion in suggestions.slice().reverse()'>
                 <div class='suggestion-content'>
-                    {{suggestion.description}}
+                    <div class='remove'>
+                        <button class='remove-button'><span class='glyphicon glyphicon-remove'><span></button>
+                    </div>
+                    <span class='whatif-title'>What if CSH...</span>{{suggestion.description}}
                 </div>
             </div>
         </div>
     </div>
-    </body>
+</body>
 </html>
