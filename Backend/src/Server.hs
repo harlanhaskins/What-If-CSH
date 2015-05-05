@@ -87,7 +87,7 @@ main = do
     [pw] <- getArgs
     (connectPostgreSQL . fromString . concat) ["host=postgres.csh.rit.edu user=harlan_whatifcsh dbname=harlan_whatifcsh password=", pw]
         >>= run 5777
-          . cors (const $ Just resourcePolicy)
+          . (cors . const . Just) resourcePolicy
           . serve suggestionAPI
           . server
 
