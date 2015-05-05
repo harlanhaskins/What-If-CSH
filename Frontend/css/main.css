@@ -29,7 +29,7 @@ body {
    font-size: 24px;
    background-color: #66206c;
    color: #fff;
-   height: 300px;
+   height: 275px;
    margin: 10px;
    padding: 15px 25px;
 }
@@ -43,8 +43,9 @@ body {
 
 @media (max-width: 991px) {
     .title {
-        margin-bottom: 10px;
+        margin-bottom: 30px;
         text-align: center;
+        font-size: 56;
     }
     .suggestion-content {
         height: auto;

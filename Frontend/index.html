@@ -22,6 +22,9 @@
         </nav>
     </div>
     <div id='main' class='container' ng-controller="WhatIfController as whatIf">
+        <div class="alert alert-danger" ng-hide='error == null' role="alert">
+            <strong>Whoops! </strong>{{error}}
+        </div>
         <div class="row suggestion-input">
             <div class="col-md-3">
                 <h2 class='title'>What if CSH...</h2>
@@ -29,7 +32,8 @@
             <div class="col-md-9">
                 <form ng-submit='submit()'>
                     <div class="input-group">
-                        <input type="text" class="form-control" placeholder="...provided ways for members to suggest things to eboard." ng-model="description">
+                        <span class="input-group-addon" id="basic-addon1">{{description.length}}/140</span>
+                        <input type="text" class="form-control" maxlength='140' placeholder="...provided ways for members to suggest things to eboard." ng-model="description">
                         <span class="input-group-btn">
                             <button id="add-button" class="btn btn-success" type="submit">Add</button>
                         </span>
