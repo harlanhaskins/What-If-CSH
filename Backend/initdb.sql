@@ -1,11 +1,11 @@
 \connect harlan_whatifcsh;
 
-DROP TABLE IF EXISTS suggestions;
+drop table if exists suggestions;
 
-CREATE TABLE suggestions (
-    description VARCHAR(255) UNIQUE NOT NULL
-    upvotes INTEGER NOT NULL
-    downvotes INTEGER NOT NULL
+create table suggestions (
+    description varchar(255) unique not null
+    upvotes integer not null
+    downvotes integer not null
 );
 
-ALTER TABLE suggestions OWNER TO harlan_whatifcsh;
+alter table suggestions owner to harlan_whatifcsh;
