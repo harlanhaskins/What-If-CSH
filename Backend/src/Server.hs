@@ -28,7 +28,8 @@ lstrip = T.unpack . T.stripStart . T.pack
 rstrip = T.unpack . T.stripEnd . T.pack
 
 data Suggestion = Suggestion
-  { description :: String
+  { id :: Integer
+  , description :: String
   , upvotes :: Integer
   , downvotes :: Integer
   } deriving Generic
@@ -38,7 +39,8 @@ instance FromJSON Suggestion
                         desc <- (v .: "description")
                         case (validatedDescription desc) of
                             (Just d) -> Suggestion
-                                    <$> return d
+                                    <$> return 0
+                                    <*> return d
                                     <*> return 0 -- upvotes start at 0
                                     <*> return 0 -- downvotes start at 0
                             Nothing -> empty
@@ -54,7 +56,7 @@ validatedDescription = validated' . strip
 
 -- PostgreSQL instances
 instance FromRow Suggestion where
-  fromRow = Suggestion <$> field <*> field <*> field
+  fromRow = Suggestion <$> field <*> field <*> field <*> field
 
 instance ToRow Suggestion where
   toRow s = [toField (description s),
@@ -63,11 +65,13 @@ instance ToRow Suggestion where
 
 type SuggestionAPI = "suggestions" :> ReqBody Suggestion :> Post Suggestion
                 :<|> "suggestions" :> Get [Suggestion]
+                :<|> "suggestions" :> Capture "id" Integer :> Delete
 
 server :: Connection -> Server SuggestionAPI
-server conn = add :<|> get
-    where add suggestion = liftIO $ execute conn "insert into suggestions values (?, ?, ?)" suggestion >> return suggestion
-          get            = liftIO $ query_ conn "select * from suggestions"
+server conn = add :<|> get :<|> remove
+    where add suggestion = liftIO $ execute conn "insert into suggestions (description, upvotes, downvotes) values (?, ?, ?)" suggestion >> return suggestion
+          get            = liftIO $ query_ conn "select * from suggestions order by id desc limit 30"
+          remove id      = liftIO $ execute conn "delete from suggestions where id = ?" (Only id) >> return ()
 
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
