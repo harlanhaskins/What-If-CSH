@@ -3,7 +3,7 @@
 drop table if exists suggestions;
 
 create table suggestions (
-    description varchar(255) not null,
+    description varchar(140) not null,
     upvotes integer not null,
     downvotes integer not null
 );
