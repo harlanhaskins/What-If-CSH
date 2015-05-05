@@ -36,16 +36,21 @@ data Suggestion = Suggestion
 instance FromJSON Suggestion
     where parseJSON (Object v) = do
                         desc <- (v .: "description")
-                        if (isValidDescription desc)
-                            then Suggestion
-                             <$> (return . strip) desc
-                             <*> return 0 -- upvotes start at 0
-                             <*> return 0 -- downvotes start at 0
-                        else empty
+                        case (validatedDescription desc) of
+                            (Just d) -> Suggestion
+                                    <$> return d
+                                    <*> return 0 -- upvotes start at 0
+                                    <*> return 0 -- downvotes start at 0
+                            Nothing -> empty
 instance ToJSON Suggestion
 
-isValidDescription = (/= 0) . length . strip
-    
+maxLength = 140
+
+validatedDescription = validated' . strip
+    where validated' s
+            | (length s > maxLength) = Just (take maxLength s)
+            | (length s > 0)   = Just s
+            | otherwise        = Nothing
 
 -- PostgreSQL instances
 instance FromRow Suggestion where
