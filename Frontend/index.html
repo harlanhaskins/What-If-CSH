@@ -48,12 +48,10 @@
                 </form>
             </span>
         </div>
-        <div class="row">
-            <ul class='list-group'>
-                <li class='list-group-item' ng-repeat='suggestion in suggestions.slice().reverse()'>
+        <div class='row'>
+            <div class='wordwrap col-md-4 col-xs-6' ng-repeat='suggestion in suggestions.slice().reverse()'>
                 <p>{{suggestion.description}}</p>
-                </li>
-            </ul>
+            </div>
         </div>
     </div>
     </body>

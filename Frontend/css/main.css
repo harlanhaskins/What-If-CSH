@@ -20,3 +20,18 @@ body {
 #add-button {
     width: 50px;
 }
+
+.wordwrap { 
+   white-space: pre-wrap;      /* CSS3 */   
+   white-space: -moz-pre-wrap; /* Firefox */    
+   white-space: -pre-wrap;     /* Opera <7 */   
+   white-space: -o-pre-wrap;   /* Opera 7 */    
+   word-wrap: break-word;      /* IE */
+   height: 300px;
+   width: 300px;
+   background-color: #66206c;
+   color: #fff;
+   font-size: 24px;
+   margin-right: 20px;
+   margin-bottom: 20px;
+}
