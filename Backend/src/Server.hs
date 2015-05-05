@@ -30,9 +30,9 @@ data Suggestion = Suggestion
 
 instance FromJSON Suggestion
     where parseJSON (Object v) = Suggestion 
-                             <$> v .: description
-                             <*> 0 -- upvotes start at 0
-                             <*> 0 -- downvotes start at 0
+                             <$> v .: "description"
+                             <*> return 0 -- upvotes start at 0
+                             <*> return 0 -- downvotes start at 0
 instance ToJSON Suggestion
 
 -- PostgreSQL instances
