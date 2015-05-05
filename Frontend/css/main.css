@@ -4,34 +4,49 @@ body {
     background-attachment: fixed;
 }
 
-#main {
-    margin-top: 80px;
+.suggestion-input {
+    margin-bottom: 10px;
 }
 
-.suggestion-input {
-    height: 70px;
+#main {
+    margin-top: 110px;
 }
 
 .title {
-    margin-top: auto;
-    margin-bottom: auto;
+    margin: 0;
 }
 
 #add-button {
     width: 50px;
 }
 
-.wordwrap { 
-   white-space: pre-wrap;      /* CSS3 */   
-   white-space: -moz-pre-wrap; /* Firefox */    
-   white-space: -pre-wrap;     /* Opera <7 */   
-   white-space: -o-pre-wrap;   /* Opera 7 */    
-   word-wrap: break-word;      /* IE */
-   height: 300px;
-   width: 300px;
+.wordwrap {
+   word-wrap: break-word;
+   padding: 0px;
+}
+
+.suggestion-content {
+   font-size: 24px;
    background-color: #66206c;
    color: #fff;
-   font-size: 24px;
-   margin-right: 20px;
-   margin-bottom: 20px;
+   height: 300px;
+   margin: 10px;
+   padding: 15px 25px;
+}
+
+#whatif-title {
+    color: #ccc;
+    vertical-align: top;
+    font-size: 30;
+    font-style: italic;
+}
+
+@media (max-width: 991px) {
+    .title {
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    .suggestion-content {
+        height: auto;
+    }
 }
