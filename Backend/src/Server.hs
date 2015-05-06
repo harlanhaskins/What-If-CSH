@@ -87,7 +87,7 @@ suggestionAPI = Proxy
 
 resourcePolicy = CorsResourcePolicy
     { corsOrigins = Nothing
-    , corsMethods = ("DELETE":simpleMethods)
+    , corsMethods = "PUT":"DELETE":simpleMethods
     , corsRequestHeaders = simpleHeaders
     , corsExposedHeaders = Nothing
     , corsMaxAge = Nothing
