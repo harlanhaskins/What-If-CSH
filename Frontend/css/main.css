@@ -37,6 +37,12 @@ body {
     font-size: 16;
 }
 
+.unstyled-button {
+    background: transparent;
+    border: none;
+    outline: 0;
+}
+
 .remove-button {
     background: transparent;
     border: none;
@@ -84,6 +90,31 @@ body {
     padding: 35px;
     padding-bottom: 25px;
 }
+
+.vote-clicked {
+    color: #fff;
+}
+
+.vote-unclicked  {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.vote-unclicked:hover {
+    color: #fff;
+}
+
+.vote-clicked:hover {
+    color: #fff;
+}
+
+.vote-clicked:active {
+    color: #fff;
+}
+
+.vote-unclicked:active {
+    color: #fff;
+}
+
 .time {
   width: 50%;
   float: left;
