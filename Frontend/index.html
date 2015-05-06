@@ -49,8 +49,13 @@
                         <button ng-click='delete(suggestion)' class='remove-button'><span class='glyphicon glyphicon-remove'><span></button>
                     </div>
                     <span class='whatif-title'>What if CSH...</span>{{suggestion.description}}
-                    <div class='time'>
-                        {{timestamp(suggestion)}}
+                    <div class='actions'>
+                        <div class='time'>
+                            {{timestamp(suggestion)}}
+                        </div>
+                        <div class='votes'>
+                            <!-- Upvote | Downvote -->
+                        </div>
                     </div>
                 </div>
             </div>

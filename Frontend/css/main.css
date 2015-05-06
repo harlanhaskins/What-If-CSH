@@ -74,9 +74,24 @@ body {
     font-style: italic;
 }
 
-.time {
+.actions {
     font-size: 12;
     color: rgba(255, 255, 255, 0.7);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 35px;
+    padding-bottom: 25px;
+}
+.time {
+  width: 50%;
+  float: left;
+}
+.votes {
+  width: 50%;
+  float: right;
+  text-align: right;
 }
 
 #no-suggestions {
@@ -93,5 +108,6 @@ body {
     }
     .suggestion-content {
         height: auto;
+        padding-bottom: 50px;
     }
 }
