@@ -37,8 +37,7 @@ angular.module('whatIfCSH', [])
              .error(errorCallback);
     }
     $scope.timestamp = function(suggestion) {
-       var m = moment(suggestion.timestamp, "YYYY-MM-DDTHH:MM:ss.SSSZ")
-       console.log(m);
+       var m = moment(suggestion.timestamp);
        return m.fromNow()
     }
 });
