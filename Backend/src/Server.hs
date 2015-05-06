@@ -77,7 +77,7 @@ type SuggestionAPI = "suggestions" :> ReqBody Suggestion :> Post Suggestion
 server :: Connection -> Server SuggestionAPI
 server conn = add :<|> get :<|> remove :<|> upvote :<|> downvote
     where add suggestion = liftIO $ execute conn "insert into suggestions (description, upvotes, downvotes, created_at) values (?, ?, ?, current_timestamp)" suggestion >> return suggestion
-          get            = liftIO $ query_ conn "select * from suggestions order by id desc limit 30"
+          get            = liftIO $ query_ conn "select * from suggestions order by created_at desc limit 30"
           remove id      = liftIO $ execute conn "delete from suggestions where id = ?" (Only id) >> return ()
           upvote id      = liftIO $ execute conn "update suggestions set upvotes = upvotes + 1 where id = ?" (Only id) >> return ()
           downvote id    = liftIO $ execute conn "update suggestions set downvotes = downvotes + 1 where id = ?" (Only id) >> return ()
