@@ -35,6 +35,7 @@ data Suggestion = Suggestion
   , upvotes :: Integer
   , downvotes :: Integer
   , timestamp :: UTCTime
+  , active :: Bool
   } deriving Generic
 
 instance FromJSON Suggestion
@@ -47,8 +48,13 @@ instance FromJSON Suggestion
                                     <*> return 0 -- upvotes start at 0
                                     <*> return 0 -- downvotes start at 0
                                     <*> return defaultTime
+                                    <*> return True
                             Nothing -> empty
 instance ToJSON Suggestion
+    where toJSON (Suggestion id desc up down time _) = object [ "description" .= desc
+                                                              , "id" .= id
+                                                              , "score" .= (up - down)
+                                                              , "timestamp" .= time ]
 
 defaultTime = (UTCTime (ModifiedJulianDay 0) (secondsToDiffTime 0))
 maxLength = 140
@@ -61,7 +67,7 @@ validatedDescription = validated' . strip
 
 -- PostgreSQL instances
 instance FromRow Suggestion where
-  fromRow = Suggestion <$> field <*> field <*> field <*> field <*> field
+  fromRow = Suggestion <$> field <*> field <*> field <*> field <*> field <*> field
 
 instance ToRow Suggestion where
   toRow s = [toField (description s),
@@ -76,9 +82,9 @@ type SuggestionAPI = "suggestions" :> ReqBody Suggestion :> Post Suggestion
 
 server :: Connection -> Server SuggestionAPI
 server conn = add :<|> get :<|> remove :<|> upvote :<|> downvote
-    where add suggestion = liftIO $ execute conn "insert into suggestions (description, upvotes, downvotes, created_at) values (?, ?, ?, current_timestamp)" suggestion >> return suggestion
-          get            = liftIO $ query_ conn "select * from suggestions order by created_at desc limit 30"
-          remove id      = liftIO $ execute conn "delete from suggestions where id = ?" (Only id) >> return ()
+    where add suggestion = liftIO $ execute conn "insert into suggestions (description, upvotes, downvotes, created_at, active) values (?, ?, ?, current_timestamp, true)" suggestion >> return suggestion
+          get            = liftIO $ query_  conn "select * from suggestions where active = TRUE order by created_at desc limit 30"
+          remove id      = liftIO $ execute conn "update suggestions set active = FALSE where id = ?" (Only id) >> return ()
           upvote id      = liftIO $ execute conn "update suggestions set upvotes = upvotes + 1 where id = ?" (Only id) >> return ()
           downvote id    = liftIO $ execute conn "update suggestions set downvotes = downvotes + 1 where id = ?" (Only id) >> return ()
 

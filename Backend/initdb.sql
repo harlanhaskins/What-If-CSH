@@ -7,7 +7,8 @@ create table suggestions (
     description varchar(140) not null,
     upvotes integer not null,
     downvotes integer not null,
-    created_at timestamptz default current_timestamp
+    created_at timestamptz default current_timestamp,
+    active boolean not null
 );
 
 alter table suggestions owner to harlan_whatifcsh;
