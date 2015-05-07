@@ -32,7 +32,7 @@ rstrip = T.unpack . T.stripEnd . T.pack
 
 data Suggestion = Suggestion
   { id :: Integer
-  , description :: String
+  , content :: String
   , timestamp :: UTCTime
   , active :: Bool
   , submitter :: String
@@ -44,16 +44,16 @@ data Status = Status
   } deriving Generic
 instance ToJSON Status
 
-instance FromJSON Suggestion
+data Submission = Submission 
+  { description :: String 
+  } deriving Generic
+
+instance FromJSON Submission
     where parseJSON (Object v) = do
                         desc <- (v .: "description")
                         case (validatedDescription desc) of
-                            (Just d) -> Suggestion
-                                    <$> return 0
-                                    <*> return d
-                                    <*> return defaultTime
-                                    <*> return True
-                                    <*> return ""
+                            (Just d) -> Submission
+                                    <$> return d
                             Nothing -> empty
 instance ToJSON Suggestion
     where toJSON (Suggestion id desc time _ submitter) = object [ "description" .= desc
@@ -75,17 +75,17 @@ validatedDescription = validated' . strip
 instance FromRow Suggestion where
   fromRow = Suggestion <$> field <*> field <*> field <*> field <*> field
 
-instance ToRow Suggestion where
+instance ToRow Submission where
   toRow s = [toField (description s)]
 
-type SuggestionAPI = "suggestions" :> ReqBody Suggestion :> Header "X-WEBAUTH-USER" String :> Post Suggestion
+type SuggestionAPI = "suggestions" :> ReqBody Submission :> Header "X-WEBAUTH-USER" String :> Post Suggestion
                 :<|> "suggestions" :> Header "X-WEBAUTH-USER" String :> Get Status
                 :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> Delete
                 :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> "vote" :> Capture "type" String :> Put ()
 
 server :: Database.PostgreSQL.Simple.Connection -> Server SuggestionAPI
 server conn = add :<|> get :<|> remove :<|> vote
-    where add suggestion user = liftIO $ execute conn "insert into suggestion (submitter, description, created_at, active) values (?, ?, current_timestamp, true)" ((toField user):(toRow suggestion)) >> return suggestion
+    where add submission user = liftIO $ query conn "insert into suggestion (submitter, description, created_at, active) values (?, ?, current_timestamp, true) returning *" ((toField user):(toRow submission)) >>= return . head
           get Nothing = E.left (404, "Invalid user.")
           get (Just user) = liftIO $ query_ conn "select * from suggestion where active = TRUE order by created_at desc limit 30" >>= return . (Status user)
           remove id user      = liftIO $ execute conn "update suggestion set active = FALSE where id = ? and submitter = ?" [toField id, toField user] >> return ()
