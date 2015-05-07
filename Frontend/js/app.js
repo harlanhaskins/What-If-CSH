@@ -64,8 +64,6 @@ angular.module('whatIfCSH', [])
         $http.post(base + '/suggestions', {description: trimmed})
              .success(function(data, status, headers, config) {
                $scope.description = "";
-               data.timestamp = Date(); // TODO: Fix the server-side brokenness that causes this.
-               data.submitter = $scope.user;
                $scope.suggestions.splice(0, 0, data);
              })
              .error(errorCallback);
