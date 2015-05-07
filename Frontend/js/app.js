@@ -11,25 +11,33 @@ angular.module('whatIfCSH', [])
 
     $http.get(base + '/suggestions')
          .success(function(data, status, headers, config) {
-             data.forEach($scope.initialize)
-             $scope.suggestions = data;
+             data.suggestions.forEach(initialize)
+             $scope.suggestions = data.suggestions;
+             $scope.user = data.user;
          })
          .error(errorCallback);
 
     $scope.score = function(suggestion) {
-        return suggestion.score + " point" + (suggestion.score == 1 ? '' : 's');
+        var score = suggestion.score + (suggestion.modifier === undefined ? 0 : suggestion.modifier);
+        return score + " point" + (score == 1 ? '' : 's');
     }
 
     $scope.vote = function(suggestion, upvote) {
-        $http.put(base + '/suggestions/' + suggestion.id + '/' + (upvote ? 'up' : 'down') + 'vote')
+        if ((suggestion.upvoted && upvote) || (suggestion.downvoted && !upvote)) {
+            suggestion.modifier = 0;
+            suggestion.upvoted = false;
+            suggestion.downvoted = false;
+            return;
+        }
+        $http.put(base + '/suggestions/' + suggestion.id + '/vote/' + (upvote ? 'up' : 'down') + 'vote')
              .success(function(data, status, headers, config) {
-                 suggestion.score += (upvote ? 1 : -1);
+                 suggestion.modifier = (upvote ? 1 : -1);
                  suggestion.upvoted = upvote;
                  suggestion.downvoted = !upvote;
              });
     };
 
-    $scope.initialize = function(suggestion, _, _) {
+    var initialize = function(suggestion, _, _) {
         suggestion.upvoted = false;
         suggestion.downvoted = false;
     }
@@ -57,6 +65,7 @@ angular.module('whatIfCSH', [])
              .success(function(data, status, headers, config) {
                $scope.description = "";
                data.timestamp = Date(); // TODO: Fix the server-side brokenness that causes this.
+               data.submitter = $scope.user;
                $scope.suggestions.splice(0, 0, data);
              })
              .error(errorCallback);
