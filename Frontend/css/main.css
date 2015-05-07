@@ -58,7 +58,7 @@ body {
 
 .suggestion-content {
    font-size: 24px;
-   background: rgba(121, 41, 148, 0.8);
+   background: rgba(121, 41, 148, 0.9);
    color: #fff;
    height: 300px;
    margin: 10px;
@@ -68,9 +68,9 @@ body {
    -webkit-transition: background .1s ease-in;
 }
 
+
 .suggestion-content:hover {
     background: rgba(121, 41, 148, 1.0);
-    
 }
 
 #whatif-title {

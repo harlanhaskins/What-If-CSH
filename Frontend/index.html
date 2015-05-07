@@ -46,12 +46,12 @@
             <div class='wordwrap col-md-4 col-s-6 col-xs-12' ng-repeat='suggestion in suggestions'>
                 <div class='suggestion-content'>
                     <div class='remove'>
-                        <button ng-click='delete(suggestion)' class='remove-button'><span class='glyphicon glyphicon-remove'><span></button>
+                        <button ng-click='delete(suggestion)' ng-hide='suggestion.submitter != user' class='remove-button'><span class='glyphicon glyphicon-remove'><span></button>
                     </div>
                     <span class='whatif-title'>What if CSH... </span>{{suggestion.description}}
                     <div class='actions'>
                         <div class='time'>
-                            {{timestamp(suggestion)}}
+                            {{timestamp(suggestion)}} by {{suggestion.submitter}}
                         </div>
                         <div class='votes'>
                             {{ score(suggestion) }} |
