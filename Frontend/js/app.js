@@ -1,6 +1,6 @@
 angular.module('whatIfCSH', [])
   .controller('WhatIfController', function($scope, $http) {
-    var base = 'http://church.csh.rit.edu:5777';
+    var base = 'https://whatif.csh.rit.edu/api'
     $scope.suggestions = [];
     $scope.description = "";
     $scope.error = null;
@@ -11,21 +11,57 @@ angular.module('whatIfCSH', [])
 
     $http.get(base + '/suggestions')
          .success(function(data, status, headers, config) {
-             $scope.suggestions = $scope.suggestions.concat(data);
+             data.forEach($scope.initialize)
+             $scope.suggestions = data;
          })
          .error(errorCallback);
+
+    $scope.score = function(suggestion) {
+        return suggestion.score + " point" + (suggestion.score == 1 ? '' : 's');
+    }
+
+    $scope.vote = function(suggestion, upvote) {
+        $http.put(base + '/suggestions/' + suggestion.id + '/' + (upvote ? 'up' : 'down') + 'vote')
+             .success(function(data, status, headers, config) {
+                 suggestion.score += (upvote ? 1 : -1);
+                 suggestion.upvoted = upvote;
+                 suggestion.downvoted = !upvote;
+             });
+    };
+
+    $scope.initialize = function(suggestion, _, _) {
+        suggestion.upvoted = false;
+        suggestion.downvoted = false;
+    }
+
+    $scope.upvoteClass = function(suggestion) {
+        var cls = 'vote-unclicked';
+        if (suggestion && suggestion.upvoted) {
+            cls = 'vote-clicked';
+        }
+        return cls + ' unstyled-button'
+    };
+
+    $scope.downvoteClass = function(suggestion) {
+        var cls = 'vote-unclicked';
+        if (suggestion && suggestion.downvoted) {
+            cls = 'vote-clicked';
+        }
+        return cls + ' unstyled-button'
+    };
+
     $scope.submit = function() {
         var trimmed = $scope.description.trim();
-        if (!trimmed) {
-            return;
-        }
+        if (!trimmed) return;
         $http.post(base + '/suggestions', {description: trimmed})
              .success(function(data, status, headers, config) {
                $scope.description = "";
-               $scope.suggestions.push(data);
+               data.timestamp = Date(); // TODO: Fix the server-side brokenness that causes this.
+               $scope.suggestions.splice(0, 0, data);
              })
              .error(errorCallback);
     };
+
     $scope.delete = function(suggestion) {
         $http.delete(base + "/suggestions/" + suggestion.id)
              .success(function(data, status, headers, config) {
