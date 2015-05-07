@@ -17,7 +17,8 @@ import Database.PostgreSQL.Simple.Time
 import Data.Time.Clock
 import Data.Time.Calendar
 import GHC.Generics
-import Network.Wai.Handler.Warp (run)
+import qualified Control.Monad.Trans.Either as E
+import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Cors
 import Servant
 import System.Environment
@@ -32,11 +33,16 @@ rstrip = T.unpack . T.stripEnd . T.pack
 data Suggestion = Suggestion
   { id :: Integer
   , description :: String
-  , upvotes :: Integer
-  , downvotes :: Integer
   , timestamp :: UTCTime
   , active :: Bool
+  , submitter :: String
   } deriving Generic
+
+data Status = Status
+  { user :: String
+  , suggestions :: [Suggestion]
+  } deriving Generic
+instance ToJSON Status
 
 instance FromJSON Suggestion
     where parseJSON (Object v) = do
@@ -45,16 +51,16 @@ instance FromJSON Suggestion
                             (Just d) -> Suggestion
                                     <$> return 0
                                     <*> return d
-                                    <*> return 0 -- upvotes start at 0
-                                    <*> return 0 -- downvotes start at 0
                                     <*> return defaultTime
                                     <*> return True
+                                    <*> return ""
                             Nothing -> empty
 instance ToJSON Suggestion
-    where toJSON (Suggestion id desc up down time _) = object [ "description" .= desc
-                                                              , "id" .= id
-                                                              , "score" .= (up - down)
-                                                              , "timestamp" .= time ]
+    where toJSON (Suggestion id desc time _ submitter) = object [ "description" .= desc
+                                                      , "id" .= id
+                                                      , "score" .= (0 :: Integer)
+                                                      , "timestamp" .= time
+                                                      , "submitter" .= submitter]
 
 defaultTime = (UTCTime (ModifiedJulianDay 0) (secondsToDiffTime 0))
 maxLength = 140
@@ -67,26 +73,26 @@ validatedDescription = validated' . strip
 
 -- PostgreSQL instances
 instance FromRow Suggestion where
-  fromRow = Suggestion <$> field <*> field <*> field <*> field <*> field <*> field
+  fromRow = Suggestion <$> field <*> field <*> field <*> field <*> field
 
 instance ToRow Suggestion where
-  toRow s = [toField (description s),
-             toField (upvotes s),
-             toField (downvotes s)]
+  toRow s = [toField (description s)]
 
-type SuggestionAPI = "suggestions" :> ReqBody Suggestion :> Post Suggestion
-                :<|> "suggestions" :> Get [Suggestion]
-                :<|> "suggestions" :> Capture "id" Integer :> Delete
-                :<|> "suggestions" :> Capture "id" Integer :> "upvote" :> Put ()
-                :<|> "suggestions" :> Capture "id" Integer :> "downvote" :> Put ()
+type SuggestionAPI = "suggestions" :> ReqBody Suggestion :> Header "X-WEBAUTH-USER" String :> Post Suggestion
+                :<|> "suggestions" :> Header "X-WEBAUTH-USER" String :> Get Status
+                :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> Delete
+                :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> "vote" :> Capture "type" String :> Put ()
 
-server :: Connection -> Server SuggestionAPI
-server conn = add :<|> get :<|> remove :<|> upvote :<|> downvote
-    where add suggestion = liftIO $ execute conn "insert into suggestions (description, upvotes, downvotes, created_at, active) values (?, ?, ?, current_timestamp, true)" suggestion >> return suggestion
-          get            = liftIO $ query_  conn "select * from suggestions where active = TRUE order by created_at desc limit 30"
-          remove id      = liftIO $ execute conn "update suggestions set active = FALSE where id = ?" (Only id) >> return ()
-          upvote id      = liftIO $ execute conn "update suggestions set upvotes = upvotes + 1 where id = ?" (Only id) >> return ()
-          downvote id    = liftIO $ execute conn "update suggestions set downvotes = downvotes + 1 where id = ?" (Only id) >> return ()
+server :: Database.PostgreSQL.Simple.Connection -> Server SuggestionAPI
+server conn = add :<|> get :<|> remove :<|> vote
+    where add suggestion user = liftIO $ execute conn "insert into suggestion (submitter, description, created_at, active) values (?, ?, current_timestamp, true)" ((toField user):(toRow suggestion)) >> return suggestion
+          get Nothing = E.left (404, "Invalid user.")
+          get (Just user) = liftIO $ query_ conn "select * from suggestion where active = TRUE order by created_at desc limit 30" >>= return . (Status user)
+          remove id user      = liftIO $ execute conn "update suggestion set active = FALSE where id = ? and submitter = ?" [toField id, toField user] >> return ()
+          vote id user voteType 
+              | elem voteType ["upvote", "downvote"] = liftIO $ execute conn ("delete from vote where suggestion_id = ? and member_uuid = ?; insert into vote values (?, ?, ?)") [toField id, toField user, toField id, toField voteType, toField user] >> return ()               
+              | otherwise = E.left (404, "Not Found")
+
 
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
