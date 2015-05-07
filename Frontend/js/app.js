@@ -23,28 +23,28 @@ angular.module('whatIfCSH', [])
     }
 
     $scope.vote = function(suggestion, upvote) {
-        if ((suggestion.upvoted && upvote) || (suggestion.downvoted && !upvote)) {
-            suggestion.modifier = 0;
-            suggestion.upvoted = false;
-            suggestion.downvoted = false;
+        if ((suggestion.vote == 'upvote' && upvote) || (suggestion.vote == 'downvote' && !upvote)) {
+            $http.delete(base + '/suggestions/' + suggestion.id + '/vote')
+                 .success(function(data, status, headers, config) {
+                     suggestion.modifier = 0;
+                     suggestion.vote = null;
+                 });
             return;
         }
         $http.put(base + '/suggestions/' + suggestion.id + '/vote/' + (upvote ? 'up' : 'down') + 'vote')
              .success(function(data, status, headers, config) {
                  suggestion.modifier = (upvote ? 1 : -1);
-                 suggestion.upvoted = upvote;
-                 suggestion.downvoted = !upvote;
+                 suggestion.vote = upvote ? 'upvote' : 'downvote';
              });
     };
 
     var initialize = function(suggestion, _, _) {
-        suggestion.upvoted = false;
-        suggestion.downvoted = false;
+        suggestion.vote = null;
     }
 
     $scope.upvoteClass = function(suggestion) {
         var cls = 'vote-unclicked';
-        if (suggestion && suggestion.upvoted) {
+        if (suggestion && suggestion.vote == 'upvote') {
             cls = 'vote-clicked';
         }
         return cls + ' unstyled-button'
@@ -52,7 +52,7 @@ angular.module('whatIfCSH', [])
 
     $scope.downvoteClass = function(suggestion) {
         var cls = 'vote-unclicked';
-        if (suggestion && suggestion.downvoted) {
+        if (suggestion && suggestion.vote == 'downvote') {
             cls = 'vote-clicked';
         }
         return cls + ' unstyled-button'
