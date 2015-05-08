@@ -75,7 +75,7 @@ instance ToRow Submission where
 type SuggestionAPI = "suggestions" :> ReqBody Submission :> Header "X-WEBAUTH-USER" String :> Post Suggestion
                 :<|> "suggestions" :> Header "X-WEBAUTH-USER" String :> Get Status
                 :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> Delete
-                :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> "vote" :> Capture "type" Integer :> Put ()
+                :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> "vote" :> Capture "type" String :> Put ()
                 :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> "vote" :> Delete
 
 server :: Database.PostgreSQL.Simple.Connection -> Server SuggestionAPI
@@ -85,7 +85,13 @@ server conn = add :<|> get :<|> remove :<|> vote :<|> unvote
           get (Just user) = liftIO $ query conn getQuery (Only user) >>= return . (Status user)
           remove id user = liftIO $ execute conn "update suggestion set active = FALSE where id = ? and submitter = ?" [toField id, toField user] >> return ()
           unvote id user = liftIO $ execute conn "delete from vote where suggestion_id = ? and member = ?" [toField id, toField user] >> return ()
-          vote id user voteType = liftIO $ execute conn ("delete from vote where suggestion_id = ? and member = ?; insert into vote values (?, ?, ?)") [toField id, toField user, toField id, toField voteType, toField user] >> return ()
+          vote id user voteType = vote' id user (intFromType voteType)
+          vote' id user voteType = liftIO $ execute conn ("delete from vote where suggestion_id = ? and member = ?; insert into vote values (?, ?, ?)") [toField id, toField user, toField id, toField voteType, toField user] >> return ()
+          intFromType :: String -> Integer
+          intFromType voteType = case voteType of
+                                    "up"   ->  1
+                                    "down" -> -1
+                                    _      ->  0
 
 getQuery = "select suggestion.*, coalesce(0, sum(vote.vote)), (select vote from vote where member = ? and vote.suggestion_id = suggestion.id) from suggestion left join vote on vote.suggestion_id = suggestion.id group by suggestion.id order by suggestion.created_at desc limit 30"
 
