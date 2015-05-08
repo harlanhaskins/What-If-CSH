@@ -11,40 +11,33 @@ angular.module('whatIfCSH', [])
 
     $http.get(base + '/suggestions')
          .success(function(data, status, headers, config) {
-             data.suggestions.forEach(initialize)
              $scope.suggestions = data.suggestions;
              $scope.user = data.user;
          })
          .error(errorCallback);
 
     $scope.score = function(suggestion) {
-        var score = suggestion.score + (suggestion.modifier === undefined ? 0 : suggestion.modifier);
+        var score = suggestion.score + (suggestion.vote === null ? 0 : suggestion.vote);
         return score + " point" + (score == 1 ? '' : 's');
     }
 
     $scope.vote = function(suggestion, upvote) {
-        if ((suggestion.vote == 'upvote' && upvote) || (suggestion.vote == 'downvote' && !upvote)) {
+        if ((suggestion.vote == 1 && upvote) || (suggestion.vote == -1 && !upvote)) {
             $http.delete(base + '/suggestions/' + suggestion.id + '/vote')
                  .success(function(data, status, headers, config) {
-                     suggestion.modifier = 0;
-                     suggestion.vote = null;
+                     suggestion.vote = 0;
                  });
             return;
         }
-        $http.put(base + '/suggestions/' + suggestion.id + '/vote/' + (upvote ? 'up' : 'down') + 'vote')
+        $http.put(base + '/suggestions/' + suggestion.id + '/vote/' + (upvote ? 1 : -1))
              .success(function(data, status, headers, config) {
-                 suggestion.modifier = (upvote ? 1 : -1);
-                 suggestion.vote = upvote ? 'upvote' : 'downvote';
+                 suggestion.vote = upvote ? 1 : -1;
              });
     };
 
-    var initialize = function(suggestion, _, _) {
-        suggestion.vote = null;
-    }
-
     $scope.upvoteClass = function(suggestion) {
         var cls = 'vote-unclicked';
-        if (suggestion && suggestion.vote == 'upvote') {
+        if (suggestion && suggestion.vote == 1) {
             cls = 'vote-clicked';
         }
         return cls + ' unstyled-button'
@@ -52,7 +45,7 @@ angular.module('whatIfCSH', [])
 
     $scope.downvoteClass = function(suggestion) {
         var cls = 'vote-unclicked';
-        if (suggestion && suggestion.vote == 'downvote') {
+        if (suggestion && suggestion.vote == -1) {
             cls = 'vote-clicked';
         }
         return cls + ' unstyled-button'
@@ -64,6 +57,7 @@ angular.module('whatIfCSH', [])
         $http.post(base + '/suggestions', {description: trimmed})
              .success(function(data, status, headers, config) {
                $scope.description = "";
+               console.log(data);
                $scope.suggestions.splice(0, 0, data);
              })
              .error(errorCallback);
