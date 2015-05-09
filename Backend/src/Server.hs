@@ -93,7 +93,7 @@ server conn = add :<|> get :<|> remove :<|> vote :<|> unvote
                                     "down" -> -1
                                     _      ->  0
 
-getQuery = "select suggestion.*, coalesce(sum(vote.vote), 0), (select vote from vote where member = ? and vote.suggestion_id = suggestion.id) from suggestion left join vote on vote.suggestion_id = suggestion.id where suggestion.active = true group by suggestion.id order by suggestion.created_at desc limit 30"
+getQuery = "select * from (select suggestion.*, coalesce(sum(vote.vote), 0) as score, (select vote from vote where member = ? and vote.suggestion_id = suggestion.id) from suggestion left join vote on vote.suggestion_id = suggestion.id where suggestion.active = true group by suggestion.id) as sub order by log(greatest(sub.score, 1)) + (sign(sub.score)*extract('epoch' from (sub.created_at - current_timestamp)) / 45000.0) desc limit 30"
 
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
