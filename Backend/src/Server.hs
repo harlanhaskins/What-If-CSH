@@ -93,7 +93,8 @@ server conn = add :<|> get :<|> remove :<|> vote :<|> unvote
                                     "down" -> -1
                                     _      ->  0
 
-getQuery = "select * from (select suggestion.*, coalesce(sum(vote.vote), 0) as score, (select vote from vote where member = ? and vote.suggestion_id = suggestion.id) from suggestion left join vote on vote.suggestion_id = suggestion.id where suggestion.active = true group by suggestion.id) as sub order by log(greatest(sub.score, 1)) + (sign(sub.score)*extract('epoch' from (sub.created_at - current_timestamp)) / 45000.0) desc limit 30"
+-- ranking algorithm from http://amix.dk/blog/post/19588
+getQuery = "select * from (select suggestion.*, coalesce(sum(vote.vote), 0) as score, (select vote from vote where member = ? and vote.suggestion_id = suggestion.id) from suggestion left join vote on vote.suggestion_id = suggestion.id where suggestion.active = true group by suggestion.id) as sub order by log(greatest(abs(sub.score, 1)) + (sign(sub.score)*extract('epoch' from (sub.created_at - current_timestamp)) / 45000.0) desc limit 30"
 
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
