@@ -64,20 +64,32 @@ example pw = do
          <- H.acquirePool postgresSettings poolSettings
 
     result <- H.session pool $ do
-        row <- H.tx (Just (H.Serializable, (Just True))) $ H.singleEx $ add "harlan" "test with hasql"
-        liftIO $ (putStrLn . showSubmission) row
-        do
-            submissions <- H.tx Nothing $ H.listEx (get "harlan")
-            forM_ submissions $ \s -> do
-                liftIO $ (putStrLn . showSubmission) s
-    liftIO $ printResult result
+        queryUnit $ unvote 43 "harlan"
+        queryUnit $ vote 43 "harlan" 1
+
+        row <- querySingle $ add "harlan" "test with hasql"
+        printSubmission row
+
+        submissions <- queryList $ get "harlan"
+        forM_ submissions $ \s -> do
+            printSubmission s
+
+        queryUnit $ remove (idFromSubmission row) "harlan"
+    printResult result
 
     H.releasePool pool
 
+queryUnit   s = H.tx (Just (H.Serializable, (Just True))) $ H.unitEx s
+querySingle s = H.tx (Just (H.Serializable, (Just True))) $ H.singleEx s
+queryList   s = H.tx Nothing                              $ H.listEx s
 
 printResult (Left c)  = print c
 printResult (Right _) = putStrLn "Success."
 
+idFromSubmission (id, _, _, _, _, _, _) = id
+
+printSubmission = liftIO . putStrLn . showSubmission
+
 showSubmission :: (Int, T.Text, UTCTime, Bool, T.Text, Int, Int) -> String
-showSubmission (id, content, timestamp, active, submitter, score, votes) = 
-    "ID: " ++ show id ++ ", Content: " ++ (T.unpack content) ++ ", Submitted by: " ++ (T.unpack submitter) ++ ", Score: " ++ show score
+showSubmission (id, content, timestamp, active, submitter, score, votes) =
+    "ID: " ++ show id ++ ", Content: " ++ (T.unpack content) ++ ", Submitted by: " ++ (T.unpack submitter) ++ ", Time: " ++ show timestamp ++ ", Score: " ++ show score ++ ", Vote: " ++ show votes

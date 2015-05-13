@@ -24,6 +24,7 @@ import Network.Wai.Middleware.Cors
 import Servant
 import System.Environment
 import qualified Data.ByteString as B
+import qualified Statements as S
 import Data.String
 import qualified Data.Text as T
 
@@ -65,13 +66,6 @@ validatedDescription = validated' . strip
             | (length s > 0)         = Just s
             | otherwise              = Nothing
 
--- PostgreSQL instances
-instance FromRow Suggestion where
-  fromRow = Suggestion <$> field <*> field <*> field <*> field <*> field <*> field <*> field
-
-instance ToRow Submission where
-  toRow s = [toField (description s)]
-
 type SuggestionAPI = "suggestions" :> ReqBody Submission :> Header "X-WEBAUTH-USER" String :> Post Suggestion
                 :<|> "suggestions" :> Header "X-WEBAUTH-USER" String :> Get Status
                 :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> Delete
@@ -80,7 +74,7 @@ type SuggestionAPI = "suggestions" :> ReqBody Submission :> Header "X-WEBAUTH-US
 
 server :: Database.PostgreSQL.Simple.Connection -> Server SuggestionAPI
 server conn = add :<|> get :<|> remove :<|> vote :<|> unvote
-    where add submission user = liftIO $ query conn "insert into suggestion (submitter, description) values (?, ?) returning id, description, created_at, active, submitter, 0 as score, 0 as vote" [toField user, (toField . description) submission] >>= return . head
+    where add submission user = liftIO $ querySingle $ add user (description submission)
           get Nothing = E.left (404, "Invalid user.")
           get (Just user) = liftIO $ query conn getQuery (Only user) >>= return . (Status user)
           remove id user = liftIO $ execute conn "update suggestion set active = FALSE where id = ? and submitter = ?" [toField id, toField user] >> return ()
