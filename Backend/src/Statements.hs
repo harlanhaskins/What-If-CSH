@@ -22,23 +22,22 @@ import qualified Hasql.Postgres as HP
 import qualified Data.Text as T
 
 add :: T.Text -> T.Text -> H.Stmt HP.Postgres
-add description user = [H.stmt|
+add user description = [H.stmt|
     insert into suggestion (submitter, description, created_at, active) values ($user, $description, current_timestamp, true)
-    returning id, description, created_at, active, submitter, 0 as score, null as vote
+    returning id, description, created_at, active, submitter, 0 as score, 0 as vote
 |]
 
 get :: T.Text -> H.Stmt HP.Postgres
 get user = [H.stmt|
     select suggestion.*,
            coalesce(sum(vote.vote), 0) as score,
-           (coalesce(select vote from vote where member = $user and vote.suggestion_id = suggestion.id), 0) as vote
+           coalesce((select vote from vote where member = $user and vote.suggestion_id = suggestion.id), 0) as vote
     from suggestion left join vote on vote.suggestion_id = suggestion.id
     where suggestion.active = true
     group by suggestion.id
     order by suggestion.created_at
     desc limit 30
 |]
-
 
 remove :: Int -> T.Text -> H.Stmt HP.Postgres
 remove id submitter = [H.stmt|
@@ -64,16 +63,21 @@ example pw = do
     pool :: H.Pool HP.Postgres
          <- H.acquirePool postgresSettings poolSettings
 
-    H.session pool $ do
-        liftIO $ (H.tx (Just (H.Serializable, (Just True))) $ H.singleEx $ add "test with hasql" "harlan") >>= putStrLn . showSubmission
-        
+    result <- H.session pool $ do
+        row <- H.tx (Just (H.Serializable, (Just True))) $ H.singleEx $ add "harlan" "test with hasql"
+        liftIO $ (putStrLn . showSubmission) row
         do
             submissions <- H.tx Nothing $ H.listEx (get "harlan")
             forM_ submissions $ \s -> do
                 liftIO $ (putStrLn . showSubmission) s
+    liftIO $ printResult result
 
     H.releasePool pool
 
+
+printResult (Left c)  = print c
+printResult (Right _) = putStrLn "Success."
+
 showSubmission :: (Int, T.Text, UTCTime, Bool, T.Text, Int, Int) -> String
 showSubmission (id, content, timestamp, active, submitter, score, votes) = 
-    "ID: " ++ show id ++ ", Content: " ++ (T.unpack content) ++ "Submitted by: " ++ (T.unpack submitter) ++ "Score: " ++ show score
+    "ID: " ++ show id ++ ", Content: " ++ (T.unpack content) ++ ", Submitted by: " ++ (T.unpack submitter) ++ ", Score: " ++ show score

@@ -80,7 +80,7 @@ type SuggestionAPI = "suggestions" :> ReqBody Submission :> Header "X-WEBAUTH-US
 
 server :: Database.PostgreSQL.Simple.Connection -> Server SuggestionAPI
 server conn = add :<|> get :<|> remove :<|> vote :<|> unvote
-    where add submission user = liftIO $ query conn "insert into suggestion (submitter, description, created_at, active) values (?, ?, current_timestamp, true) returning id, description, created_at, active, submitter, 0 as score, null as vote" [toField user, (toField . description) submission] >>= return . head
+    where add submission user = liftIO $ query conn "insert into suggestion (submitter, description) values (?, ?) returning id, description, created_at, active, submitter, 0 as score, 0 as vote" [toField user, (toField . description) submission] >>= return . head
           get Nothing = E.left (404, "Invalid user.")
           get (Just user) = liftIO $ query conn getQuery (Only user) >>= return . (Status user)
           remove id user = liftIO $ execute conn "update suggestion set active = FALSE where id = ? and submitter = ?" [toField id, toField user] >> return ()
@@ -94,7 +94,7 @@ server conn = add :<|> get :<|> remove :<|> vote :<|> unvote
                                     _      ->  0
 
 -- ranking algorithm from http://amix.dk/blog/post/19588
-getQuery = "select suggestion.*, coalesce(sum(vote.vote), 0) as score, (select vote from vote where member = ? and vote.suggestion_id = suggestion.id) from suggestion left join vote on vote.suggestion_id = suggestion.id where suggestion.active = true group by suggestion.id order by suggestion.created_at desc limit 30"
+getQuery = "select suggestion.*, coalesce(sum(vote.vote), 0) as score, coalesce((select vote from vote where member = ? and vote.suggestion_id = suggestion.id), 0) as vote from suggestion left join vote on vote.suggestion_id = suggestion.id where suggestion.active = true group by suggestion.id order by suggestion.created_at desc limit 30"
 
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
