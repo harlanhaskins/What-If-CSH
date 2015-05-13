@@ -56,7 +56,7 @@ unvote id user = [H.stmt|
 |]
 
 example = do
-    let postgresSettings = HP.ParamSettings "postgres.csh.rit.edu" 5432 "harlan_whatifcsh" "clarinettist5^om" "harlan_whatifcsh"
+    let postgresSettings = HP.ParamSettings "postgres.csh.rit.edu" 5432 "harlan_whatifcsh" "oops" "harlan_whatifcsh"
 
     poolSettings <- maybe (fail "Improper session settings") return $
                     H.poolSettings 6 30
