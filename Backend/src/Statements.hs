@@ -16,26 +16,26 @@ import Data.Time.Calendar
 import GHC.Generics
 import Data.Proxy
 import Debug.Trace
- 
+
 import qualified Hasql as H
 import qualified Hasql.Postgres as HP
 import qualified Data.Text as T
 
-add :: Submission -> T.Text -> H.Stmt HP.Postgres
-add (Submission description) user = [H.stmt|
-    insert into suggestion (submitter, description, created_at, active) values ($user, $description, current_timestamp, true) 
+add :: T.Text -> T.Text -> H.Stmt HP.Postgres
+add description user = [H.stmt|
+    insert into suggestion (submitter, description, created_at, active) values ($user, $description, current_timestamp, true)
     returning id, description, created_at, active, submitter, 0 as score, null as vote
 |]
 
 get :: T.Text -> H.Stmt HP.Postgres
 get user = [H.stmt|
-    select suggestion.*, 
+    select suggestion.*,
            coalesce(sum(vote.vote), 0) as score,
-           (select vote from vote where member = $user and vote.suggestion_id = suggestion.id) 
-    from suggestion left join vote on vote.suggestion_id = suggestion.id 
-    where suggestion.active = true 
-    group by suggestion.id 
-    order by suggestion.created_at 
+           (coalesce(select vote from vote where member = $user and vote.suggestion_id = suggestion.id), 0) as vote
+    from suggestion left join vote on vote.suggestion_id = suggestion.id
+    where suggestion.active = true
+    group by suggestion.id
+    order by suggestion.created_at
     desc limit 30
 |]
 
@@ -47,7 +47,7 @@ remove id submitter = [H.stmt|
 
 vote :: Int -> T.Text -> Int -> H.Stmt HP.Postgres
 vote id user voteType = [H.stmt|
-    delete from vote where suggestion_id = $id and member = $user; insert into vote values ($id, $voteType, $user)
+    insert into vote values ($id, $voteType, $user)
 |]
 
 unvote :: Int -> T.Text -> H.Stmt HP.Postgres
@@ -55,8 +55,8 @@ unvote id user = [H.stmt|
     delete from vote where suggestion_id = $id and member = $user
 |]
 
-example = do
-    let postgresSettings = HP.ParamSettings "postgres.csh.rit.edu" 5432 "harlan_whatifcsh" "clarinettist5^om" "harlan_whatifcsh"
+example pw = do
+    let postgresSettings = HP.ParamSettings "postgres.csh.rit.edu" 5432 "harlan_whatifcsh" pw "harlan_whatifcsh"
 
     poolSettings <- maybe (fail "Improper session settings") return $
                     H.poolSettings 6 30
@@ -65,12 +65,15 @@ example = do
          <- H.acquirePool postgresSettings poolSettings
 
     H.session pool $ do
-        H.tx (Just (H.Serializable, (Just True))) $ do
-            runMaybeT $ do
-                lift $ H.unitEx $ add (Submission "test with hasql") "harlan"
+        liftIO $ (H.tx (Just (H.Serializable, (Just True))) $ H.singleEx $ add "test with hasql" "harlan") >>= putStrLn . showSubmission
+        
         do
-            submissions <- H.tx Nothing $ H.vectorEx (get "harlan")
-            forM_ submissions $ \(id :: Int, content :: T.Text, timestamp :: UTCTime, active :: Bool, submitter :: T.Text, score :: Int, votes :: Maybe T.Text) -> do
-                liftIO $ putStrLn $ "ID: " ++ show id ++ ", Content: " ++ (T.unpack content) ++ "Submitted by: " ++ (T.unpack submitter) ++ "Score: " ++ show score
+            submissions <- H.tx Nothing $ H.listEx (get "harlan")
+            forM_ submissions $ \s -> do
+                liftIO $ (putStrLn . showSubmission) s
 
     H.releasePool pool
+
+showSubmission :: (Int, T.Text, UTCTime, Bool, T.Text, Int, Int) -> String
+showSubmission (id, content, timestamp, active, submitter, score, votes) = 
+    "ID: " ++ show id ++ ", Content: " ++ (T.unpack content) ++ "Submitted by: " ++ (T.unpack submitter) ++ "Score: " ++ show score
