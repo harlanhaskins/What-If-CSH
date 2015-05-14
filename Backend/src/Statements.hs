@@ -54,26 +54,31 @@ unvote id user = [H.stmt|
     delete from vote where suggestion_id = $id and member = $user
 |]
 
-example pw = do
-    let postgresSettings = HP.ParamSettings "postgres.csh.rit.edu" 5432 "harlan_whatifcsh" pw "harlan_whatifcsh"
+postgresSettings pw = HP.ParamSettings "postgres.csh.rit.edu" 5432 "harlan_whatifcsh" pw "harlan_whatifcsh"
 
+example pw = do
     poolSettings <- maybe (fail "Improper session settings") return $
                     H.poolSettings 6 30
 
     pool :: H.Pool HP.Postgres
-         <- H.acquirePool postgresSettings poolSettings
+         <- H.acquirePool (postgresSettings pw) poolSettings
 
     result <- H.session pool $ do
-        queryUnit $ unvote 43 "harlan"
-        queryUnit $ vote 43 "harlan" 1
-
+        liftIO $ putStrLn "\nAdding now row.."
         row <- querySingle $ add "harlan" "test with hasql"
         printSubmission row
 
-        submissions <- queryList $ get "harlan"
-        forM_ submissions $ \s -> do
-            printSubmission s
+        liftIO $ putStrLn "\nRemoving existing votes on submission."
+        queryUnit $ unvote (idFromSubmission row) "harlan"
 
+        liftIO $ putStrLn "\nUpvoting submission."
+        queryUnit $ vote (idFromSubmission row) "harlan" 1
+
+        liftIO $ putStrLn "\nRetrieving latest posts..."
+        submissions <- queryList $ get "harlan"
+        mapM_ printSubmission submissions
+
+        liftIO $ putStrLn "\nDeleting post from earlier."
         queryUnit $ remove (idFromSubmission row) "harlan"
     printResult result
 
@@ -91,5 +96,9 @@ idFromSubmission (id, _, _, _, _, _, _) = id
 printSubmission = liftIO . putStrLn . showSubmission
 
 showSubmission :: (Int, T.Text, UTCTime, Bool, T.Text, Int, Int) -> String
-showSubmission (id, content, timestamp, active, submitter, score, votes) =
-    "ID: " ++ show id ++ ", Content: " ++ (T.unpack content) ++ ", Submitted by: " ++ (T.unpack submitter) ++ ", Time: " ++ show timestamp ++ ", Score: " ++ show score ++ ", Vote: " ++ show votes
+showSubmission (id, content, timestamp, active, submitter, score, votes) = "ID: " ++ show id
+                                                                        ++ ", Content: " ++ (T.unpack content)
+                                                                        ++ ", Submitted by: " ++ (T.unpack submitter)
+                                                                        ++ ", Time: " ++ show timestamp
+                                                                        ++ ", Score: " ++ show score
+                                                                        ++ ", Vote: " ++ show votes
