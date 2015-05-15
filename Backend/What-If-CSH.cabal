@@ -19,7 +19,7 @@ cabal-version:       >=1.10
 executable What-If-CSH
   main-is:             Server.hs
   -- other-modules:
-  other-extensions:    DataKinds, PolyKinds, TypeFamilies, DeriveGeneric, TypeOperators, QuasiQuotes, DeriveAnyClass, OverloadedStrings, ScopedTypeVariables, FlexibleContexts
+  default-extensions:          DataKinds, PolyKinds, TypeFamilies, DeriveGeneric, TypeOperators, QuasiQuotes, DeriveAnyClass, OverloadedStrings, ScopedTypeVariables, FlexibleContexts
   build-depends:       base, transformers, aeson, hasql, hasql-postgres, servant, servant-server, warp, bytestring, wai-cors, text, time, either
   hs-source-dirs:      src
   default-language:    Haskell2010
