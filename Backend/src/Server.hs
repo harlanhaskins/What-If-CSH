@@ -84,6 +84,7 @@ server pool = add :<|> get :<|> remove :<|> vote :<|> unvote
           unvote (Just user) id = runQuery $ H.session pool $ do
                 S.queryUnit $ S.unvote id user
           vote (Just user) id voteType = runQuery $ H.session pool $ do
+                S.queryUnit $ S.unvote id user
                 S.queryUnit $ S.vote id user (intFromType voteType)
           intFromType :: T.Text -> Int
           intFromType voteType = case voteType of
