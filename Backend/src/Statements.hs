@@ -1,23 +1,6 @@
 module Statements where
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
 
-import Control.Monad hiding (forM_, mapM_, forM, mapM)
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Maybe
-import Data.Functor.Identity
-import Data.Foldable
-import Data.Aeson
-import Data.Time.Clock
-import Data.Time.Calendar
-import GHC.Generics
-import Data.Proxy
-import Debug.Trace
 import Data.ByteString (ByteString)
-
 import qualified Hasql as H
 import qualified Hasql.Postgres as HP
 import qualified Data.Text as T

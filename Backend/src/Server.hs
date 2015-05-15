@@ -1,16 +1,7 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 import Control.Applicative
 import Control.Monad.IO.Class
-import Data.Aeson
 import Data.Time.Clock
-import Data.Time.Calendar
+import Data.Aeson
 import GHC.Generics
 import Data.Proxy
 import Network.Wai.Handler.Warp
