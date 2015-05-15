@@ -16,6 +16,7 @@ import Data.Time.Calendar
 import GHC.Generics
 import Data.Proxy
 import Debug.Trace
+import Data.ByteString (ByteString)
 
 import qualified Hasql as H
 import qualified Hasql.Postgres as HP
@@ -31,9 +32,13 @@ get :: T.Text -> H.Stmt HP.Postgres
 get user = [H.stmt|
     select suggestion.*,
            coalesce(sum(vote.vote), 0) as score,
-           coalesce((select vote from vote where member = $user and vote.suggestion_id = suggestion.id), 0) as vote
+           coalesce((
+            select vote from vote
+                where member = $user
+                  and vote.suggestion_id = suggestion.id)
+            , 0) as vote
     from suggestion left join vote on vote.suggestion_id = suggestion.id
-    where suggestion.active = true
+        where suggestion.active = true
     group by suggestion.id
     order by suggestion.created_at
     desc limit 30
@@ -54,14 +59,63 @@ unvote id user = [H.stmt|
     delete from vote where suggestion_id = $id and member = $user
 |]
 
+deleteTable = [H.stmt|
+    drop table if exists suggestion cascade
+|]
+
+createTable = [H.stmt|
+    create table suggestion (
+        id bigserial primary key,
+        description varchar(140) not null,
+        created_at timestamptz default current_timestamp,
+        active boolean not null,
+        submitter varchar(100) not null
+    )
+|]
+
+createVoteTable = [H.stmt|
+    create table vote (
+        suggestion_id bigint not null references suggestion (id),
+        vote integer not null CHECK (vote = -1 or vote = 1),
+        member varchar(100) default 'nobody' not null
+    )
+|]
+
+createIndices :: H.Session HP.Postgres IO ()
+createIndices = do
+    mapM_ queryUnit [createSuggestionIndex,
+                     createSubmitterIndex,
+                     createVoteSuggestionIndex,
+                     createVoteMemberIndex]
+
+createVoteSuggestionIndex = [H.stmt|
+    create index "vote_suggestion_id_index" on vote (suggestion_id)
+|]
+
+createVoteMemberIndex = [H.stmt|
+    create index "vote_member_index" on vote (member)
+|]
+
+createSubmitterIndex = [H.stmt|
+    create index "suggestion_submitter_index" on suggestion (submitter)
+|]
+
+createSuggestionIndex = [H.stmt|
+    create index "suggestion_id_index" on suggestion (id)
+|]
+
 postgresSettings pw = HP.ParamSettings "postgres.csh.rit.edu" 5432 "harlan_whatifcsh" pw "harlan_whatifcsh"
 
-example pw = do
+connectPool :: ByteString -> IO (H.Pool HP.Postgres)
+connectPool pw = do
     poolSettings <- maybe (fail "Improper session settings") return $
                     H.poolSettings 6 30
 
-    pool :: H.Pool HP.Postgres
-         <- H.acquirePool (postgresSettings pw) poolSettings
+    H.acquirePool (postgresSettings pw) poolSettings
+
+example pw = do
+
+    pool <- connectPool pw
 
     result <- H.session pool $ do
         liftIO $ putStrLn "\nAdding now row.."
@@ -102,3 +156,4 @@ showSubmission (id, content, timestamp, active, submitter, score, votes) = "ID: 
                                                                         ++ ", Time: " ++ show timestamp
                                                                         ++ ", Score: " ++ show score
                                                                         ++ ", Vote: " ++ show votes
+

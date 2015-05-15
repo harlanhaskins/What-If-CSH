@@ -13,48 +13,47 @@ import Data.Time.Clock
 import Data.Time.Calendar
 import GHC.Generics
 import Data.Proxy
-import Database.PostgreSQL.Simple
-import Database.PostgreSQL.Simple.FromRow
-import Database.PostgreSQL.Simple.ToField
-import Database.PostgreSQL.Simple.ToRow
-import Database.PostgreSQL.Simple.Time
-import qualified Control.Monad.Trans.Either as E
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Cors
 import Servant
 import System.Environment
-import qualified Data.ByteString as B
 import Data.String
+import qualified Data.ByteString.Char8 as BSC
+import qualified Control.Monad.Trans.Either as E
+import qualified Data.ByteString as BS
 import qualified Data.Text as T
+import qualified Statements as S
+import qualified Hasql as H
+import qualified Hasql.Postgres as HP
 
 strip  = T.unpack . T.strip . T.pack
 lstrip = T.unpack . T.stripStart . T.pack
 rstrip = T.unpack . T.stripEnd . T.pack
 
 data Suggestion = Suggestion
-  { id :: Integer
-  , content :: String
+  { id :: Int
+  , content :: T.Text
   , timestamp :: UTCTime
   , active :: Bool
-  , submitter :: String
+  , submitter :: T.Text
   , score :: Int
   , vote :: Maybe Int
   } deriving (Generic, ToJSON)
 
 data Status = Status
-  { user :: String
+  { user :: T.Text
   , suggestions :: [Suggestion]
   } deriving (Generic, ToJSON)
 
 data Submission = Submission
-  { description :: String
+  { description :: T.Text
   } deriving Generic
 
 instance FromJSON Submission
     where parseJSON (Object v) = do
                         desc <- (v .: "description")
                         case (validatedDescription desc) of
-                            (Just d) -> Submission <$> return d
+                            (Just d) -> Submission <$> (return . T.pack) d
                             Nothing -> empty
 
 maxLength = 140
@@ -65,36 +64,42 @@ validatedDescription = validated' . strip
             | (length s > 0)         = Just s
             | otherwise              = Nothing
 
--- PostgreSQL instances
-instance FromRow Suggestion where
-  fromRow = Suggestion <$> field <*> field <*> field <*> field <*> field <*> field <*> field
+type SuggestionAPI = "suggestions" :> Header "X-WEBAUTH-USER" T.Text :> ReqBody Submission :> Post Suggestion
+                :<|> "suggestions" :> Header "X-WEBAUTH-USER" T.Text :> Get Status
+                :<|> "suggestions" :> Header "X-WEBAUTH-USER" T.Text :> Capture "id" Int :> Delete
+                :<|> "suggestions" :> Header "X-WEBAUTH-USER" T.Text :> Capture "id" Int :> "vote" :> Capture "type" T.Text :> Put ()
+                :<|> "suggestions" :> Header "X-WEBAUTH-USER" T.Text :> Capture "id" Int :> "vote" :> Delete
 
-instance ToRow Submission where
-  toRow s = [toField (description s)]
-
-type SuggestionAPI = "suggestions" :> ReqBody Submission :> Header "X-WEBAUTH-USER" String :> Post Suggestion
-                :<|> "suggestions" :> Header "X-WEBAUTH-USER" String :> Get Status
-                :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> Delete
-                :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> "vote" :> Capture "type" String :> Put ()
-                :<|> "suggestions" :> Capture "id" Integer :> Header "X-WEBAUTH-USER" String :> "vote" :> Delete
-
-server :: Database.PostgreSQL.Simple.Connection -> Server SuggestionAPI
-server conn = add :<|> get :<|> remove :<|> vote :<|> unvote
-    where add submission user = liftIO $ query conn "insert into suggestion (submitter, description) values (?, ?) returning id, description, created_at, active, submitter, 0 as score, 0 as vote" [toField user, (toField . description) submission] >>= return . head
+server :: H.Pool HP.Postgres -> Server SuggestionAPI
+server pool = add :<|> get :<|> remove :<|> vote :<|> unvote
+    where add (Just user) submission = runQuery $ H.session pool $ do
+                tuple <- S.querySingle $ S.add user (description submission)
+                return (suggestionFromTuple tuple)
           get Nothing = E.left (404, "Invalid user.")
-          get (Just user) = liftIO $ query conn getQuery (Only user) >>= return . (Status user)
-          remove id user = liftIO $ execute conn "update suggestion set active = FALSE where id = ? and submitter = ?" [toField id, toField user] >> return ()
-          unvote id user = liftIO $ execute conn "delete from vote where suggestion_id = ? and member = ?" [toField id, toField user] >> return ()
-          vote id user voteType = vote' id user (intFromType voteType)
-          vote' id user voteType = liftIO $ execute conn ("delete from vote where suggestion_id = ? and member = ?; insert into vote values (?, ?, ?)") [toField id, toField user, toField id, toField voteType, toField user] >> return ()
-          intFromType :: String -> Integer
+          get (Just user) = runQuery $ H.session pool $ do
+                tuples <- S.queryList $ S.get user
+                return (statusFromTuples user tuples)
+          remove (Just user) id = runQuery $ H.session pool $ do
+                S.queryUnit $ S.remove id user
+                return ()
+          unvote (Just user) id = runQuery $ H.session pool $ do
+                S.queryUnit $ S.unvote id user
+                return ()
+          vote (Just user) id voteType = runQuery $ H.session pool $ do
+                S.queryUnit $ S.vote id user (intFromType voteType)
+                return ()
+          intFromType :: T.Text -> Int
           intFromType voteType = case voteType of
                                     "up"   ->  1
                                     "down" -> -1
                                     _      ->  0
+          runQuery q = (q >>= toServant)
 
--- ranking algorithm from http://amix.dk/blog/post/19588
-getQuery = "select suggestion.*, coalesce(sum(vote.vote), 0) as score, coalesce((select vote from vote where member = ? and vote.suggestion_id = suggestion.id), 0) as vote from suggestion left join vote on vote.suggestion_id = suggestion.id where suggestion.active = true group by suggestion.id order by suggestion.created_at desc limit 30"
+toServant (Left dbError) = E.left (500, show dbError)
+toServant (Right value) = E.right value
+
+suggestionFromTuple (id, content, timestamp, active, submitter, score, votes) = (Suggestion id content timestamp active submitter score votes)
+statusFromTuples user tuples = (Status user (map suggestionFromTuple tuples))
 
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
@@ -112,7 +117,7 @@ resourcePolicy = CorsResourcePolicy
 
 main = do
     [pw] <- getArgs
-    (connectPostgreSQL . fromString . concat) ["host=postgres.csh.rit.edu user=harlan_whatifcsh dbname=harlan_whatifcsh password=", pw]
+    S.connectPool (BSC.pack pw)
         >>= run 5777
           . (cors . const . Just) resourcePolicy
           . serve suggestionAPI
