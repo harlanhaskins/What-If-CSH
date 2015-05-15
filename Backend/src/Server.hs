@@ -81,19 +81,16 @@ server pool = add :<|> get :<|> remove :<|> vote :<|> unvote
                 return (statusFromTuples user tuples)
           remove (Just user) id = runQuery $ H.session pool $ do
                 S.queryUnit $ S.remove id user
-                return ()
           unvote (Just user) id = runQuery $ H.session pool $ do
                 S.queryUnit $ S.unvote id user
-                return ()
           vote (Just user) id voteType = runQuery $ H.session pool $ do
                 S.queryUnit $ S.vote id user (intFromType voteType)
-                return ()
           intFromType :: T.Text -> Int
           intFromType voteType = case voteType of
                                     "up"   ->  1
                                     "down" -> -1
                                     _      ->  0
-          runQuery q = (q >>= toServant)
+          runQuery = (>>= toServant)
 
 toServant (Left dbError) = E.left (500, show dbError)
 toServant (Right value) = E.right value
