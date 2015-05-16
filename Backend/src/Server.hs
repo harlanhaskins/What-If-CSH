@@ -63,17 +63,21 @@ type SuggestionAPI = "suggestions" :> Header "X-WEBAUTH-USER" T.Text :> ReqBody 
 
 server :: H.Pool HP.Postgres -> Server SuggestionAPI
 server pool = add :<|> get :<|> remove :<|> vote :<|> unvote
-    where add (Just user) submission = runQuery $ H.session pool $ do
+    where add Nothing _ = fail
+          add (Just user) submission = runQuery $ H.session pool $ do
                 tuple <- S.querySingle $ S.add user (description submission)
                 return (suggestionFromTuple tuple)
-          get Nothing = E.left (404, "Invalid user.")
+          get Nothing = fail
           get (Just user) = runQuery $ H.session pool $ do
                 tuples <- S.queryList $ S.get user
                 return (statusFromTuples user tuples)
+          remove Nothing _ = fail
           remove (Just user) id = runQuery $ H.session pool $ do
                 S.queryUnit $ S.remove id user
+          unvote Nothing _ = fail
           unvote (Just user) id = runQuery $ H.session pool $ do
                 S.queryUnit $ S.unvote id user
+          vote Nothing _ _ = fail
           vote (Just user) id voteType = runQuery $ H.session pool $ do
                 S.queryUnit $ S.unvote id user
                 S.queryUnit $ S.vote id user (intFromType voteType)
@@ -83,6 +87,7 @@ server pool = add :<|> get :<|> remove :<|> vote :<|> unvote
                                     "down" -> -1
                                     _      ->  0
           runQuery = (>>= toServant)
+          fail = E.left (403, "Invalid user.")
 
 toServant (Left dbError) = E.left (500, show dbError)
 toServant (Right value) = E.right value
