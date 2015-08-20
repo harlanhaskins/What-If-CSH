@@ -2,6 +2,7 @@ body {
     background-color: #eee;
     background-image: url('../img/background.png');
     background-attachment: fixed;
+    font-family: -apple-system, sans-serif;
 }
 
 .suggestion-input {
