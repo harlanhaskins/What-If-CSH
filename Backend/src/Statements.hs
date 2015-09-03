@@ -22,7 +22,7 @@ get user = [H.stmt|
             , 0) as vote
     from suggestion left join vote on vote.suggestion_id = suggestion.id
         where suggestion.active = true
-          and suggestion.created_at > (current_timestamp - interval '14 days')
+        and suggestion.created_at > (current_timestamp - interval '14 days')
     group by suggestion.id
     order by suggestion.created_at
     desc

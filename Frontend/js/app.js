@@ -1,7 +1,7 @@
 angular.module('whatIfCSH', [])
 .controller('WhatIfController', function($scope, $http) {
     var base = 'https://whatif.csh.rit.edu/api'
-        $scope.suggestions = [];
+    $scope.suggestions = [];
     $scope.description = "";
     $scope.error = null;
 
