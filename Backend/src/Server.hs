@@ -100,7 +100,7 @@ suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
 
 trim = f . f
-   where f = reverse . dropWhile isSpace
+   where f = BSC.reverse . BSC.dropWhile isSpace
 
 resourcePolicy = CorsResourcePolicy
     { corsOrigins = Nothing
@@ -114,8 +114,8 @@ resourcePolicy = CorsResourcePolicy
     }
 
 main = do
-    pw <- readFile "pw.txt"
-    S.connectPool ((BSC.pack . trim) pw)
+    pw <- BSC.readFile "pw.txt"
+    S.connectPool pw
         >>= run 5777
           . (cors . const . Just) resourcePolicy
           . serve suggestionAPI
