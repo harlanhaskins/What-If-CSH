@@ -9,6 +9,7 @@ import Network.Wai.Middleware.Cors
 import Servant
 import System.Environment
 import Data.String
+import Data.Char (isSpace)
 import qualified Data.ByteString.Char8 as BSC
 import qualified Control.Monad.Trans.Either as E
 import qualified Data.ByteString as BS
@@ -98,6 +99,9 @@ statusFromTuples user tuples = (Status user (map suggestionFromTuple tuples))
 suggestionAPI :: Proxy SuggestionAPI
 suggestionAPI = Proxy
 
+trim = f . f
+   where f = reverse . dropWhile isSpace
+
 resourcePolicy = CorsResourcePolicy
     { corsOrigins = Nothing
     , corsMethods = "PUT":"DELETE":simpleMethods
@@ -110,8 +114,8 @@ resourcePolicy = CorsResourcePolicy
     }
 
 main = do
-    [pw] <- getArgs
-    S.connectPool (BSC.pack pw)
+    pw <- readFile "pw.txt"
+    S.connectPool ((BSC.pack . trim) pw)
         >>= run 5777
           . (cors . const . Just) resourcePolicy
           . serve suggestionAPI
